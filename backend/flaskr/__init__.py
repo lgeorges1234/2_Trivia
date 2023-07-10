@@ -8,25 +8,64 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+def paginate(request, selection):
+    page = request.args.get("page",1, type=int)
+    start = (page - 1) * QUESTIONS_PER_PAGE
+    end = start + QUESTIONS_PER_PAGE
+
+    questions = [question.format() for question in selection]
+    current_questions = questions[start:end]
+
+    return current_questions
+
+def get_categories(category_id=None):
+    categories_dict = {}
+    if category_id:
+        categories_dict = Category.query.get(category_id)
+    else:
+        categories_dict = {categorie.id: categorie.type for categorie in Category.query.distinct().all()}
+    
+    return categories_dict
+
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
 
+
     """
     @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
     """
+    # CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app)
 
     """
     @TODO: Use the after_request decorator to set Access-Control-Allow
     """
+    @app.after_request
+    def after_request(response):
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Content-Type,Authorization,true"
+        )
+        response.headers.add(
+            "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
+        )
+        return response
+    
+    @app.route('/')
+    def check_server():
+     return "server running"
 
     """
     @TODO:
     Create an endpoint to handle GET requests
     for all available categories.
     """
-
+    @app.route("/categories")
+    def retrieve_categories():
+        categories = get_categories()
+        return jsonify({'categories': categories})
 
     """
     @TODO:
@@ -35,11 +74,41 @@ def create_app(test_config=None):
     This endpoint should return a list of questions,
     number of total questions, current category, categories.
 
+
     TEST: At this point, when you start the application
     you should see questions and categories generated,
     ten questions per page and pagination at the bottom of the screen for three pages.
     Clicking on the page numbers should update the questions.
     """
+
+    #       url: `/questions?page=${this.state.page}`, //TODO: update request URL
+    #   type: 'GET',
+    #   success: (result) => {
+    #     this.setState({
+    #       questions: result.questions,
+    #       totalQuestions: result.total_questions,
+    #       categories: result.categories,
+    #       currentCategory: result.current_category,
+    #     });
+    #     return;
+
+    @app.route('/questions')
+    def retrieve_questions():
+        selection = Question.query.order_by(Question.id).all()
+        current_questions = paginate(request, selection)
+
+        if len(current_questions) == 0:
+            abort(404)
+
+        return jsonify(
+            {
+                "succes": True,
+                "questions": current_questions,
+                "total_questions": len(selection),
+                "categories": get_categories(),
+                "currentCategory": None,
+            }
+        )
 
     """
     @TODO:
@@ -48,6 +117,27 @@ def create_app(test_config=None):
     TEST: When you click the trash icon next to a question, the question will be removed.
     This removal will persist in the database and when you refresh the page.
     """
+
+    @app.route("/questions/<int:question_id>", methods=["DELETE"])
+    def search_by_category(question_id):
+        try:
+            question = Question.query.filter(Question.id==question_id).one_or_none()
+
+            if question is None:
+                abort(404)
+
+            question.delete()
+            return jsonify(
+              {
+                  "success": True,
+                  "deleted": question_id,
+                  "total_questions": len(Question.query.all()),
+                  "currentCategory": None
+              }
+            ), 200
+
+        except:
+            abort(422)
 
     """
     @TODO:
@@ -59,6 +149,52 @@ def create_app(test_config=None):
     the form will clear and the question will appear at the end of the last page
     of the questions list in the "List" tab.
     """
+
+    #     this.state = {
+    #   question: '',
+    #   answer: '',
+    #   difficulty: 1,
+    #   category: 1,
+    #   categories: {},
+    # };
+
+    @app.route('/questions', methods=['POST'])
+    def create_questions():
+        body = request.get_json()
+        question = body.get("question", None)
+        answer = body.get("answer", None)
+        difficulty = body.get("difficulty", None)
+        category = body.get("category", None)
+        search = body.get("searchTerm", None)
+
+        try:
+            if search:
+                print(search)
+                selection = Question.query.order_by(Question.id).filter(
+                    Question.question.ilike("%{}%".format(search))
+                ).all()
+            else:
+                question = Question(question=question, answer=answer, difficulty=difficulty, category=category)
+                question.insert()
+                selection = Question.query.order_by(Question.id).all()
+            
+            current_questions = paginate(request, selection)
+
+            if len(current_questions) == 0:
+                abort(404)
+
+            return jsonify(
+                {
+                    "succes": True,
+                    "questions": current_questions,
+                    "total_questions": len(selection),
+                    "categories": get_categories(),
+                    "currentCategory": None,
+                }
+            )
+
+        except:
+            abort(422)
 
     """
     @TODO:
@@ -78,7 +214,27 @@ def create_app(test_config=None):
     TEST: In the "List" tab / main screen, clicking on one of the
     categories in the left column will cause only questions of that
     category to be shown.
+
     """
+
+    @app.route('/categories/<int:category_id>/questions')
+    def get_question_categories(category_id):
+        try:
+            selection = Question.query.filter(Question.category==category_id).all()
+            current_questions = paginate(request, selection)
+
+            category = get_categories(category_id).format()
+
+            return jsonify(
+                {
+                    "succes": True,
+                    "questions": current_questions,
+                    "total_questions": len(selection),
+                    "currentCategory": category,
+                }
+            )
+        except:
+            abort(422)
 
     """
     @TODO:
@@ -92,11 +248,60 @@ def create_app(test_config=None):
     and shown whether they were correct or not.
     """
 
+    @app.route("/quizzes", methods=['POST'])
+    def play_game():
+        body = request.get_json()
+        print(body)
+        previous_questions = body.get("previous_questions")
+        quiz_category = body.get("quiz_category", None).get("id")
+
+        try:
+            if quiz_category:
+                questions = Question.query.filter(Question.category == quiz_category).all()
+            else:
+                questions = Question.query.all()
+
+            question = None
+
+            while len(previous_questions) < len(questions):
+                question = random.choice([q for q in questions if q not in previous_questions])
+                if question.id not in previous_questions:
+                    break
+    
+            return jsonify(
+                    {
+                        "question": question.format()
+                    }
+                ),200
+
+        except:
+            abort(422)
     """
     @TODO:
     Create error handlers for all expected errors
     including 404 and 422.
     """
 
-    return app
+    @app.errorhandler(404)
+    def not_found(error):
+        return (
+            jsonify({"success": False, "error": 404, "message": "resource not found"}),
+            404,
+        )
 
+    @app.errorhandler(422)
+    def unprocessable(error):
+        return (
+            jsonify({"success": False, "error": 422, "message": "unprocessable"}),
+            422,
+        )
+
+
+
+    return app
+    # if __name__ == '__main__':
+    #     app.run()
+
+# $env:FLASK_APP='flaskr'
+# $env:FLASK_ENV='development'
+# python -m flask run
