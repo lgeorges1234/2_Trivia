@@ -67,32 +67,15 @@ One note before you delve into your tasks: for each endpoint, you are expected t
 8. Create a `POST` endpoint to get questions to play the quiz. This endpoint should take a category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions.
 9. Create error handlers for all expected errors including 400, 404, 422, and 500.
 
-## Documenting your Endpoints
+## Endpoint Documentation
 
-You will need to provide detailed documentation of your API endpoints including the URL, request parameters, and the response body. Use the example below as a reference.
+[API Documentation](docs/API_doc.md)
 
-### Documentation Example
 
-`GET '/api/v1.0/categories'`
-
-- Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
-- Request Arguments: None
-- Returns: An object with a single key, `categories`, that contains an object of `id: category_string` key: value pairs.
-
-```json
-{
-  "1": "Science",
-  "2": "Art",
-  "3": "Geography",
-  "4": "History",
-  "5": "Entertainment",
-  "6": "Sports"
-}
-```
 
 ## Testing
 
-Write at least one test for the success and at least one error behavior of each endpoint using the unittest library.
+In order to run tests navigate to the backend folder and run the following commands: 
 
 To deploy the tests, run
 
@@ -102,3 +85,6 @@ createdb trivia_test
 psql trivia_test < trivia.psql
 python test_flaskr.py
 ```
+The first time you run the tests, omit the dropdb command. 
+
+All tests are kept in that file and should be maintained as updates are made to app functionality.
