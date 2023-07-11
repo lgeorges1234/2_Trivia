@@ -26,13 +26,19 @@ class TriviaTestCase(unittest.TestCase):
         user_name = os.getenv("POSTGRES_USER_TEST")
         user_password = os.getenv("POSTGRES_PASSWORD_TEST")
 
-        print(user_name)
-
 
         self.app = create_app()
         self.client = self.app.test_client
         # self.database_path = "postgres://{}/{}".format('localhost:5432', self.database_name)
-        self.database_path = f'postgresql://{user_name}:{user_password}@{posgres_host}:{posgres_port}/{database_name}'
+        # self.database_path = f'postgresql://{user_name}:{user_password}@{posgres_host}:{posgres_port}/{database_name}'
+        # self.database_path = "postgresql://trivia_user_test:password123_test@127.0.0.1:5432/trivia_test"
+
+        self.database_name = "trivia_test"
+        self.database_path = "postgresql://{}:{}@{}/{}".format(
+            "trivia_user_test", "password123_test", "localhost:5432", self.database_name
+        )
+
+        print(self.database_path)
 
         setup_db(self.app, self.database_path)
 
