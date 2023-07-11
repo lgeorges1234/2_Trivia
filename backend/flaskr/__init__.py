@@ -8,6 +8,11 @@ from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+
+#---------------------------------------
+#           Utility functions
+#---------------------------------------
+
 def paginate(request, selection):
     page = request.args.get("page",1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
@@ -27,6 +32,10 @@ def get_categories(category_id=None):
     
     return categories_dict
 
+
+#---------------------------------------
+#           Flask App
+#---------------------------------------
 
 def create_app(test_config=None):
     # create and configure the app

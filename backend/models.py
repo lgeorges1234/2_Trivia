@@ -16,7 +16,6 @@ database_name = os.getenv("POSTGRES_DB_DEV")
 user_name = os.getenv("POSTGRES_USER_DEV")
 user_password = os.getenv("POSTGRES_PASSWORD_DEV")
 
-print(database_name)
 
 # database_path = 'postgresql://{}/{}'.format('localhost:5432', database_name)
 database_path = f'postgresql://{user_name}:{user_password}@{posgres_host}:{posgres_port}/{database_name}'
