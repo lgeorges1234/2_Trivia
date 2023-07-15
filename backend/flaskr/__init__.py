@@ -193,14 +193,10 @@ def create_app(test_config=None):
 
     """
     @TODO:
-    Create a POST endpoint to get questions to play the quiz.
+    POST endpoint to get questions to play the quiz.
     This endpoint should take category and previous question parameters
     and return a random questions within the given category,
     if provided, and that is not one of the previous questions.
-
-    TEST: In the "Play" tab, after a user selects "All" or a category,
-    one question at a time is displayed, the user is allowed to answer
-    and shown whether they were correct or not.
     """
 
     @app.route("/quizzes", methods=['POST'])
@@ -215,24 +211,34 @@ def create_app(test_config=None):
             else:
                 questions = Question.query.all()
 
-            question = None
+
 
             while len(previous_questions) < len(questions):
                 question = random.choice([q for q in questions if q not in previous_questions])
                 if question.id not in previous_questions:
-                    break
-    
+                    return jsonify(
+                        {
+                            "success": True,
+                            "question": question.format(),
+                        }
+                    ),200
+            
+            if len(previous_questions) == len(questions):
+                print("ok")
+                question = False
+
+            print(question)
             return jsonify(
                     {
-                        "question": question.format()
+                        "success": True,
+                        "question": question,
                     }
                 ),200
 
         except:
             abort(422)
     """
-    @TODO:
-    Create error handlers for all expected errors
+    Error handlers for all expected errors
     including 404 and 422.
     """
 
@@ -258,4 +264,4 @@ def create_app(test_config=None):
 
 # $env:FLASK_APP='flaskr'
 # $env:FLASK_ENV='development'
-# python -m flask run
+# python -m flask run --reload
